@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd ~/.gd-edit
+./gd-edit.nix.bin

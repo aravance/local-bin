@@ -1,0 +1,4 @@
+#!/usr/bin/env zsh
+
+usbreset 1038:1290
+usbreset 1038:1294

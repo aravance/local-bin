@@ -1,0 +1,13 @@
+#!/bin/zsh
+
+if (( # == 0 ));then
+  arg=1
+elif [[ "$1" != "0" && "$1" != "1" ]];then
+  print >&2 "usage: $0 [0/1]"
+  exit 1
+else
+  arg=$1
+fi
+
+
+for i in {16..31};do sudo sh -c "echo $arg > /sys/devices/system/cpu/cpu$i/online";done

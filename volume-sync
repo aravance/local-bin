@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+
+import asyncio
+import signal
+import pulsectl
+import pulsectl_asyncio
+from contextlib import suppress
+
+async def sync_volume(pulse, from_sink, to_sink):
+  if from_sink == None or to_sink == None:
+    return
+  if from_sink.volume == to_sink.volume:
+    print('same volume')
+    return
+  print('Syncing from:', from_sink.description, 'to:', to_sink.description)
+  print('from volume:', from_sink.volume, 'to volume:', to_sink.volume)
+  await pulse.sink_volume_set(to_sink.index, from_sink.volume)
+
+async def get_volumes(pulse):
+  sinks = await pulse.sink_list()
+  chat_sink = next((s for s in sinks if s.name == 'alsa_output.usb-Audeze_LLC_Audeze_Maxwell_Dongle_0000000000000000-01.pro-output-0'), None)
+  game_sink = next((s for s in sinks if s.name == 'alsa_output.usb-Audeze_LLC_Audeze_Maxwell_Dongle_0000000000000000-01.pro-output-1'), None)
+  return chat_sink, game_sink
+
+chat_sink = None
+game_sink = None
+
+async def listen():
+  global chat_sink
+  global game_sink
+  async with pulsectl_asyncio.PulseAsync('event-printer') as pulse:
+    # print('Event types:', pulsectl.PulseEventTypeEnum)
+    # print('Event facilities:', pulsectl.PulseEventFacilityEnum)
+    # print('Event masks:', pulsectl.PulseEventMaskEnum)
+    chat_sink, game_sink = await get_volumes(pulse)
+    async for ev in pulse.subscribe_events('sink'):
+      # print('Pulse event:', ev)
+      if ev.t == 'new' and ev.facility == 'sink':
+        chat_sink, game_sink = await get_volumes(pulse)
+        print('new chat_sink:', chat_sink)
+        print('new game_sink:', game_sink)
+      if ev.t == 'remove':
+        if chat_sink != None and ev.index == chat_sink.index:
+          chat_sink = None
+          print('removed chat_sink')
+        if game_sink != None and ev.index == game_sink.index:
+          game_sink = None
+          print('removed game_sink')
+      if ev.t == 'change':
+        if game_sink != None and ev.index == game_sink.index:
+          chat_sink, game_sink = await get_volumes(pulse)
+          sinks = await pulse.sink_list()
+          await sync_volume(pulse, game_sink, chat_sink)
+        if chat_sink != None and ev.index == chat_sink.index:
+          chat_sink, game_sink = await get_volumes(pulse)
+          sinks = await pulse.sink_list()
+          await sync_volume(pulse, chat_sink, game_sink)
+
+async def main():
+  listen_task = asyncio.create_task(listen())
+  for sig in (signal.SIGTERM, signal.SIGHUP, signal.SIGINT):
+    loop.add_signal_handler(sig, listen_task.cancel)
+  with suppress(asyncio.CancelledError):
+      await listen_task
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())

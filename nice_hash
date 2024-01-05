@@ -1,0 +1,32 @@
+#!/usr/bin/env zsh
+
+_hwmon=/sys/class/hwmon/hwmon3
+
+_pwm1_enable=$(cat $_hwmon/pwm1_enable)
+_pwm1=$(cat $_hwmon/pwm1)
+_power1_cap=$(cat $_hwmon/power1_cap)
+
+doas zsh <<EOF
+echo 1 > $_hwmon/pwm1_enable
+echo 150 > $_hwmon/pwm1
+echo 200000000 > $_hwmon/power1_cap
+EOF
+
+case $1 in
+  "ethash")
+    teamredminer -a ethash -o stratum+tcp://daggerhashimoto.usa-west.nicehash.com:3353 -u 3GHaFh1GD2FbPcBWczZDao6f9WhCudxPLH.archbot -p hashingftw --prog_config=B1200
+    ;;
+  "kawpow")
+    teamredminer -a kawpow -o stratum+tcp://kawpow.usa-west.nicehash.com:3385 -u 3GHaFh1GD2FbPcBWczZDao6f9WhCudxPLH.archbot -p hashingftw --prog_config=B1200
+    ;;
+  *)
+    echo "Falling back to ethash"
+    teamredminer -a ethash -o stratum+tcp://daggerhashimoto.usa-west.nicehash.com:3353 -u 3GHaFh1GD2FbPcBWczZDao6f9WhCudxPLH.archbot -p hashingftw --prog_config=C
+    ;;
+esac
+
+doas zsh <<EOF
+echo $_power1_cap > $_hwmon/power1_cap
+echo $_pwm1 > $_hwmon/pwm1
+echo $_pwm1_enable > $_hwmon/pwm1_enable
+EOF
