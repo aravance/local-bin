@@ -9,7 +9,7 @@ from contextlib import suppress
 async def sync_volume(pulse, from_sink, to_sink):
   if from_sink == None or to_sink == None:
     return
-  if from_sink.volume == to_sink.volume:
+  if from_sink.volume.value_flat == to_sink.volume.value_flat:
     print('same volume')
     return
   print('Syncing from:', from_sink.description, 'to:', to_sink.description)
