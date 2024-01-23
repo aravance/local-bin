@@ -3,7 +3,7 @@
 if [[ $# -eq 1 ]]; then
   selected=$1
 else
-  selected=`(find /Volumes/unix/IdeaProjects -mindepth 1 -maxdepth 1 -type d) | fzf`
+  selected=`(echo prezto;echo ~/.dotfiles;echo ~/.config/nvim;find /build -mindepth 1 -maxdepth 1 -type d) | fzf`
 fi
 
 if [[ -z $selected ]]; then
