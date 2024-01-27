@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 
+findpaths=(/build ~/vaults)
+extras=(prezto ~/.dotfiles ~/.config/nvim)
+
 if [[ $# -eq 1 ]]; then
   selected=$1
 else
-  selected=`(echo prezto;echo ~/.dotfiles;echo ~/.config/nvim;find /build -mindepth 1 -maxdepth 1 -type d) | fzf`
+  selected=`(
+  printf "%s\n" "${extras[@]}"
+  find "${findpaths[@]}" -mindepth 1 -maxdepth 1 -type d
+  ) | fzf`
 fi
 
 if [[ -z $selected ]]; then
