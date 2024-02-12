@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+if [ -z "$1" ]; then
+  echo "No u2f file provided"
+  exit 1
+fi
+
+if ! [ -f "$1" ]; then
+  echo "file not found: '$1'"
+  exit 2
+fi
+
+echo "Waiting for first keyboard half..."
+while ! [ -b "/dev/sdb" ];do sleep 1;done
+echo "Mounting first keyboard half..."
+mount /dev/sdb /mnt/moergo
+echo "Uploading file to first keyboard half..."
+cp "$1" /mnt/moergo
+echo "Waiting for first keyboard half..."
+while [ -b "/dev/sdb" ];do sleep 1;done
+umount /mnt/moergo
+
+echo "Waiting for second keyboard half..."
+while ! [ -b "/dev/sdb" ];do sleep 1;done
+echo "Mounting second keyboard half..."
+mount /dev/sdb /mnt/moergo
+echo "Uploading file to second keyboard half..."
+cp "$1" /mnt/moergo
+echo "Waiting for second keyboard half..."
+while [ -b "/dev/sdb" ];do sleep 1;done
+umount /mnt/moergo
+
+echo "Done."
