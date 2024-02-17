@@ -10,24 +10,36 @@ if ! [ -f "$1" ]; then
   exit 2
 fi
 
-echo "Waiting for first keyboard half..."
-while ! [ -b "/dev/sdb" ];do sleep 1;done
-echo "Mounting first keyboard half..."
-mount /dev/sdb /mnt/moergo
-echo "Uploading file to first keyboard half..."
-cp "$1" /mnt/moergo
-echo "Waiting for first keyboard half..."
-while [ -b "/dev/sdb" ];do sleep 1;done
-umount /mnt/moergo
+udiskie -aNq || exit 1 &
+upid="$!"
 
-echo "Waiting for second keyboard half..."
-while ! [ -b "/dev/sdb" ];do sleep 1;done
-echo "Mounting second keyboard half..."
-mount /dev/sdb /mnt/moergo
-echo "Uploading file to second keyboard half..."
-cp "$1" /mnt/moergo
-echo "Waiting for second keyboard half..."
-while [ -b "/dev/sdb" ];do sleep 1;done
-umount /mnt/moergo
+copy_uf2() {
+  while ! [ -f "$2/CURRENT.UF2" ];do sleep 1;done
+  echo "uploading file to $3 keyboard..."
+  cp "$1" "$2"
+  echo "waiting for $3 keyboard to dismount..."
+  while [ -f "$2/CURRENT.UF2" ];do sleep 1;done
+  echo "done: $3 keyboard"
+}
 
-echo "Done."
+mountdir=/run/media/$USER
+declare -A sides=(
+  ["left hand"]=GLV80LHBOOT
+  ["right hand"]=GLV80RHBOOT
+)
+
+pids=()
+echo "waiting for keyboard..."
+for side in "${!sides[@]}";do
+  dir="$mountdir/${sides[$side]}/"
+  copy_uf2 "$1" "$dir" "$side" &
+  pids+=("$!")
+done
+
+for pid in ${pids[*]};do
+  wait $pid
+done
+
+kill $upid
+
+echo "finished flashing"
