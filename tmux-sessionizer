@@ -9,7 +9,7 @@ else
   selected=`(
   printf "%s\n" "${extras[@]}"
   find "${findpaths[@]}" -mindepth 1 -maxdepth 1 -type d
-  ) | fzf`
+  ) | fzf --preview-window 'up,60%,border-bottom' --preview 'tmux capture-pane -pet $(basename {} | tr . _) 2>/dev/null || ls --color -lhG {}'`
 fi
 
 if [[ -z $selected ]]; then
